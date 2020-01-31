@@ -131,7 +131,7 @@ Initial website parse to extract static elements
 '''
 
 #remember to install correct version of chrome driver executable (open chrome and inspect version)
-executable_path = '/Users/hamishgibbs/Documents/nCOV-2019/Web_Scraping/chromedriver'
+executable_path = '/Users/hamishgibbs/Documents/nCOV-2019/Web_Scraping/Baidu_Web_Scraping/chromedriver'
 
 #url to be scraped
 url = 'https://qianxi.baidu.com/'
@@ -163,34 +163,41 @@ date_names_sub = [i.replace('-', '_') for i in date_names]
 #%%
 '''
 Using data from initial scrape, conduct full, systematic web scrape
+
 '''
 
+#i = 12
+
 download_directory_all = '/Users/hamishgibbs/Documents/nCOV-2019/Web_Scraping/Scraped_Data/'
-
-#initialize web driver
-driver = webdriver.Chrome(executable_path = executable_path)
-
-#let page load
-driver.get(url)
-short_wait()
-
-#click on guidance mask to access page elements (guidance mask covers the new page when it is loaded)
-#guidance_mask = driver.find_element_by_xpath('//*[@id="content"]/div/div[7]')
-#guidance_mask.click()
-#short_wait()
-
-#define buttons that are constant no matter the layout of the site
-city_name_drop_down = driver.find_element_by_xpath('//*[@id="content"]/div/div[2]/div[1]/div/div')
-date_drop_down = driver.find_element_by_xpath('//*[@id="content"]/div/div[2]/div[2]/div/div/div')
-outgoing_button = driver.find_element_by_xpath('//*[@id="content"]/div/div[2]/div[3]/div/div[1]')
-incoming_button = driver.find_element_by_xpath('//*[@id="content"]/div/div[2]/div[3]/div/div[2]')
 
 #here: sort out error handling to ensure that every city name is clicked
 #for every city hyperlink:
 
 error_occurred_last_time = False
 
-for i, city_xpath in enumerate(city_name_xpaths):
+for i in range(12, len(city_name_xpaths) + 1, 1):
+    
+    city_xpath = city_name_xpaths[i]
+    
+    #initialize web driver
+    driver = webdriver.Chrome(executable_path = executable_path)
+    
+    #let page load
+    driver.get(url)
+    short_wait()
+    
+    #click on guidance mask to access page elements (guidance mask covers the new page when it is loaded)
+    #guidance_mask = driver.find_element_by_xpath('//*[@id="content"]/div/div[7]')
+    #guidance_mask.click()
+    #short_wait()
+    
+    #define buttons that are constant no matter the layout of the site
+    city_name_drop_down = driver.find_element_by_xpath('//*[@id="content"]/div/div[2]/div[1]/div/div')
+    date_drop_down = driver.find_element_by_xpath('//*[@id="content"]/div/div[2]/div[2]/div/div/div')
+    outgoing_button = driver.find_element_by_xpath('//*[@id="content"]/div/div[2]/div[3]/div/div[1]')
+    incoming_button = driver.find_element_by_xpath('//*[@id="content"]/div/div[2]/div[3]/div/div[2]')
+    
+    
     #click on city dropdown
     if error_occurred_last_time == False:
         city_name_drop_down.click()
@@ -291,9 +298,5 @@ for i, city_xpath in enumerate(city_name_xpaths):
         error_occurred_last_time = True
         continue
 
-driver.quit()
-
-#store data as: city, date, outgoing/incoming, line_chart_data, panel_1_data, panel_2_data
-
-#%%
+    driver.quit()
 
