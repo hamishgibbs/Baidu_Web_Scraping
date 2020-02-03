@@ -277,9 +277,12 @@ open_chrome_windows = 0
 for i in range(0, len(city_name_xpaths) + 1, 1):
     scrape_both_line_charts(i)
 #%%
-with Pool(5) as p:
+with Pool(3) as p:
     p.map(scrape_both_line_charts, list(range(0, len(city_name_xpaths) + 1, 1)))
 #%%
+    
+def scrape_panels_for_select_dates(i):
+    
     city_xpath = city_name_xpaths[i]
            
     #initialize web driver
@@ -294,39 +297,81 @@ with Pool(5) as p:
     date_drop_down = driver.find_element_by_xpath('//*[@id="content"]/div/div[2]/div[2]/div/div/div')
     incoming_button = driver.find_element_by_xpath('//*[@id="content"]/div/div[2]/div[3]/div/div[1]')
     outgoing_button = driver.find_element_by_xpath('//*[@id="content"]/div/div[2]/div[3]/div/div[2]')
-
     
     #click on city dropdown
     city_name_drop_down.click()
     short_wait()
-        
+    
+    #select four dates from now to 1/1 to now for scraping panels
+    select_date_button_index = []
+    
+    for date_index in range(int((len(date_names)+1)/4), len(date_names)+1, int((len(date_names)+1)/4)):
+        select_date_button_index.append(date_index)
+    
+    select_date_buttons = [date_name_xpaths[index] for index in select_date_button_index]
+    
+    city_button = driver.find_element_by_xpath(city_xpath)
+    city_button.click()
+    short_wait()
+    
+    #load data into existing directories (where lines have already been scraped)
+    current_download_directory = download_directory_all + city_names[i]
+    
     try:
-        city_button = driver.find_element_by_xpath(city_xpath)
-        city_button.click()
-        short_wait()
-        
-        #get constant panel buttons
-        city_panel_button = driver.find_element_by_xpath('//*[@id="content"]/div/div[5]/div[1]/div/div[1]')
-        province_panel_button = driver.find_element_by_xpath('//*[@id="content"]/div/div[5]/div[1]/div/div[2]')
-        
-        #make a directory with the city name
-        current_download_directory = download_directory_all + city_names[i]
-        os.mkdir(current_download_directory)
-        
-        #line charts do not change for different date values
-        #scrape outgoing line chart
-        line_df = scrape_line_graph(driver)
-        write_csv(line_df, current_download_directory + '/' + city_names[i] + '_line_outgoing.csv')
-        
-        incoming_button.click()
-        short_wait()
-        #scrape incoming line chart
-        line_df = scrape_line_graph(driver)
-        write_csv(line_df, current_download_directory + '/' + city_names[i] + '_line_incoming.csv')
-        
-        #click on outgoing
         outgoing_button.click()
-        short_wait()
+        
+        for a, date_xpath in enumerate(select_date_buttons):
+            date_drop_down.click()
+            short_wait()
+            
+            #make a directory for each date
+            current_date_download_directory = current_download_directory + '/' + date_names_sub[a]
+            os.mkdir(current_date_download_directory)
+            
+            #click on new date
+            date_button = driver.find_element_by_xpath(date_xpath)
+            date_button.click()
+            short_wait()
+            
+            #parse outgoing cities panel
+            panel_df = scrape_panel_data(driver)
+            panel_df.to_csv(current_date_download_directory + '/' + city_names[i] + '_' + date_names_sub[a] + '_cities_outgoing.csv')
+            
+            #activate provinces panel
+            province_panel_button.click()
+            short_wait()
+            
+            #parse outgoing provinces panel
+            panel_df = scrape_panel_data(driver)
+            panel_df.to_csv(current_date_download_directory + '/' + city_names[i] + '_' + date_names_sub[a] + '_provinces_outgoing.csv')
+            
+            #reset cities panel
+            city_panel_button.click()
+            short_wait()
+            
+            #change to incoming trips
+            incoming_button.click()
+            short_wait()
+            
+            #parse incoming cities data
+            panel_df = scrape_panel_data(driver)
+            panel_df.to_csv(current_date_download_directory + '/' + city_names[i] + '_' + date_names_sub[a] + '_cities_incoming.csv')
+             
+            #activate provinces panel
+            province_panel_button.click()
+            short_wait()
+            
+            #parse incoming provinces
+            panel_df = scrape_panel_data(driver)
+            panel_df.to_csv(current_date_download_directory + '/' + city_names[i] + '_' + date_names_sub[a] + '_provinces_incoming.csv')
+            
+            #reset to cities panel
+            city_panel_button.click()
+            short_wait()
+            
+            #reset to outgoing for next date
+            outgoing_button.click()
+            short_wait()
         
         driver.quit()
 
@@ -334,9 +379,7 @@ with Pool(5) as p:
         print(e)
         
         driver.quit()
-        
-        continue
-    
+            
 
     
     
