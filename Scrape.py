@@ -75,14 +75,14 @@ def scrape_panel_data(driver):
         item_data = item.find_all('td')
         
         if len(item_data) == 3:
-            panel_final_data.append({'rank':item_data[0].getText(), 'city':item_data[1].getText(), 'percent':item_data[2].getText()})
+            panel_final_data.append({'rank':item_data[0].getText(), 'place':item_data[1].getText(), 'percent':item_data[2].getText()})
     
     panel_df = pd.DataFrame(panel_final_data) 
     
     return(panel_df)
 
 def scrape_line_graph(driver):
-    line_chart = driver.find_element_by_xpath('//*[@id="content"]/div/div[6]')
+    line_chart = driver.find_element_by_xpath('//*[@id="content"]/div/div[5]')
 
     line_chart_data = []
     #chart data only appears one value at a time - hover over every item in the chart and get its value
@@ -95,7 +95,7 @@ def scrape_line_graph(driver):
         time.sleep(0.001)
         
         #get the container holding the current data of the hovered point
-        current_line_data_container = driver.find_element_by_xpath('//*[@id="content"]/div/div[6]/div[1]/div[2]')
+        current_line_data_container = driver.find_element_by_xpath('//*[@id="content"]/div/div[5]/div[1]/div[2]')
     
         #extract value and date from hovered point
         line_data_soup = BeautifulSoup.BeautifulSoup(current_line_data_container.get_attribute('outerHTML'), 'html.parser')
@@ -125,7 +125,7 @@ def scrape_line_graph(driver):
                     #if there is no 2020 value, extract date and 2019 value
                     line_date = line[: text_location_2019]
                     data_2019 = line[text_location_2019:]
-                    data_2020_value = 'NULL'
+                    data_2020_value = ''
                     data_2019_value = data_2019.split(': ')[1]
             except:
                 continue
@@ -133,7 +133,7 @@ def scrape_line_graph(driver):
             line_chart_data.append({'date':line_date, '2019':data_2019_value, '2020':data_2020_value}) 
     
     #reconcile numeric dates with chinese dates (recorded)
-    td = (datetime.date.today() + datetime.timedelta(days=15)) - datetime.date(2020, 1, 1)
+    td = (datetime.date.today() + datetime.timedelta(days=11)) - datetime.date(2020, 1, 1)
     
     line_date_labels = []
     
@@ -151,7 +151,7 @@ def scrape_line_graph(driver):
         line_df.reset_index(inplace=True)
         
         #correct an error where the last selected record becomes the first if the function used in succession 
-        if line_df.loc[0, '2020'] == 'NULL':
+        if line_df.loc[0, '2020'] == '':
             line_df = line_df.drop(0, axis=0)
         
         line_df['date'] = line_date_labels
@@ -219,7 +219,7 @@ def scrape_both_line_charts(i):
         
         driver.quit() 
         
-def scrape_panels_for_select_dates(i):
+def scrape_panels(i, select_date_button_index = None):
     
     city_xpath = city_name_xpaths[i]
            
@@ -239,10 +239,12 @@ def scrape_panels_for_select_dates(i):
     #click on city dropdown
     city_name_drop_down.click()
     short_wait()
-    
-    #select four dates from now to 1/1 to now for scraping panels
-    select_date_button_index = [29, 22, 15, 8]
-    
+        
+    #scrape for a subset of dates or all dates - date button index is the index of the date buttons to use (date names don't match up)
+    if select_date_button_index == None:
+        select_date_button_index = range(0, len(date_name_xpaths), 1)
+    else:    
+        select_date_button_index = select_date_button_index
     
     city_button = driver.find_element_by_xpath(city_xpath)
     city_button.click()
@@ -273,9 +275,9 @@ def scrape_panels_for_select_dates(i):
             
             date_button.click()
             short_wait()
-            
-            city_panel_button = driver.find_element_by_xpath('//*[@id="content"]/div/div[5]/div[1]/div/div[1]')
-            province_panel_button = driver.find_element_by_xpath('//*[@id="content"]/div/div[5]/div[1]/div/div[2]')
+
+            city_panel_button = driver.find_element_by_xpath('//*[@id="content"]/div/div[4]/div[1]/div/div[1]')
+            province_panel_button = driver.find_element_by_xpath('//*[@id="content"]/div/div[4]/div[1]/div/div[2]')
             
             #parse outgoing cities panel
             panel_df = scrape_panel_data(driver)
@@ -327,42 +329,7 @@ def scrape_panels_for_select_dates(i):
 def write_csv(df, file_name):
     if df is not None:
         df.to_csv(file_name)
-#%%
-driver = webdriver.Chrome(executable_path = executable_path)
-
-#let page load
-driver.get(url)
-short_wait()
-
-#define buttons that are constant no matter the layout of the site
-city_name_drop_down = driver.find_element_by_xpath('//*[@id="content"]/div/div[2]/div[1]/div/div')
-date_drop_down = driver.find_element_by_xpath('//*[@id="content"]/div/div[2]/div[2]/div/div/div')
-incoming_button = driver.find_element_by_xpath('//*[@id="content"]/div/div[2]/div[3]/div/div[1]')
-outgoing_button = driver.find_element_by_xpath('//*[@id="content"]/div/div[2]/div[3]/div/div[2]')
-
-#click on city dropdown
-city_name_drop_down.click()
-short_wait()     
-
-city_xpath = city_name_xpaths[3]
-   
-city_button = driver.find_element_by_xpath(city_xpath)
-city_button.click()
-short_wait()
-
-date_button = driver.find_element_by_xpath(date_xpath)
-
-date_drop_down.click()
-short_wait()
-
-date_button.click()
-short_wait()
-            
-line_data_soup = BeautifulSoup.BeautifulSoup(date_button.get_attribute('innerHTML'), 'html.parser')
-line_data_soup2 = BeautifulSoup.BeautifulSoup(date_button.get_attribute('outerHTML'), 'html.parser')
-
-date_drop_down.click()
-short_wait()
+     
 #%%
 '''
 Initial website parse to extract static elements
@@ -387,6 +354,7 @@ soup = BeautifulSoup.BeautifulSoup(driver.page_source, 'html.parser')
 driver.quit()
 
 #%%
+
 #get text and xpath of city name and dates stored in main dropdown lists
 city_name_elements = soup.find_all('a', attrs={'class': 'sel_city_name'})
 city_name_xpaths = [xpath_soup(i) for i in city_name_elements]
@@ -414,6 +382,16 @@ Proposed changes to workflow
 
 download_directory_all = '/Users/hamishgibbs/Documents/nCOV-2019/Web_Scraping/Scraped_Data/'
 
+#scrape line charts and then panels for each city
+with Pool(3) as p:
+    
+    city_index = list(range(0, len(city_name_xpaths) + 1, 1))
+    
+    p.map(scrape_both_line_charts, city_index)
+    p.map(scrape_panels, city_index)                
+
+
+#%%
 with Pool(3) as p:
     p.map(scrape_both_line_charts, list(range(0, len(city_name_xpaths) + 1, 1)))
 #%%
@@ -421,6 +399,7 @@ with Pool(3) as p:
     p.map(scrape_panels_for_select_dates, list(range(0, len(city_name_xpaths) + 1, 1)))                
     
 #%%
+select_date_button_index = [29, 22, 15, 8]
 
 
     
