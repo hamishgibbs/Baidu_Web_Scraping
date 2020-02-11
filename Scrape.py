@@ -15,6 +15,11 @@ import pandas as pd
 import os
 import datetime
 from multiprocessing import Pool
+from itertools import compress
+import numpy as np
+
+chrome_options = Options()  
+chrome_options.add_argument("--headless")
 
 #%%
 '''
@@ -133,7 +138,7 @@ def scrape_line_graph(driver):
             line_chart_data.append({'date':line_date, '2019':data_2019_value, '2020':data_2020_value}) 
     
     #reconcile numeric dates with chinese dates (recorded)
-    td = (datetime.date.today() + datetime.timedelta(days=11)) - datetime.date(2020, 1, 1)
+    td = (datetime.date.today() + datetime.timedelta(days=8)) - datetime.date(2020, 1, 1)
     
     line_date_labels = []
     
@@ -172,7 +177,7 @@ def scrape_both_line_charts(i):
     city_xpath = city_name_xpaths[i]
            
     #initialize web driver
-    driver = webdriver.Chrome(executable_path = executable_path)
+    driver = webdriver.Chrome(executable_path = executable_path, chrome_options=chrome_options)
     
     #let page load
     driver.get(url)
@@ -224,7 +229,7 @@ def scrape_panels(i, select_date_button_index = None):
     city_xpath = city_name_xpaths[i]
            
     #initialize web driver
-    driver = webdriver.Chrome(executable_path = executable_path)
+    driver = webdriver.Chrome(executable_path = executable_path, chrome_options=chrome_options)
     
     #let page load
     driver.get(url)
@@ -342,7 +347,7 @@ executable_path = '/Users/hamishgibbs/Documents/nCOV-2019/Web_Scraping/Baidu_Web
 url = 'https://qianxi.baidu.com/'
 
 #initialize web driver - not using a headless web browser to continue to monitor progress
-driver = webdriver.Chrome(executable_path = executable_path)
+driver = webdriver.Chrome(executable_path = executable_path, chrome_options=chrome_options)
 
 #let page load
 driver.get(url)
@@ -371,35 +376,49 @@ date_names_sub = [i.replace('-', '_') for i in date_names]
 '''
 Using data from initial scrape, conduct full, systematic web scrape
 
-Proposed changes to workflow 
-    - scrape every line chart for every city (return and scrape every panel for every date)
-    - continue with headless driver
-    - run multiple windows in parallel (10) - while
-    
-    - avoid tru multiprocessing by batching into 10 RAM is not the issue but time.sleep()
-
 '''
 
 download_directory_all = '/Users/hamishgibbs/Documents/nCOV-2019/Web_Scraping/Scraped_Data/'
 
 #scrape line charts and then panels for each city
+
+city_index = list(range(0, len(city_name_xpaths), 1))
+
+
+#%%
+'''
+responding to error 10-02-2020:
+    
+only scrape line names that haven't been scraped
+'''
+scraped_names = os.listdir('/Users/hamishgibbs/Documents/nCOV-2019/Web_Scraping/Scraped_Data')
+not_scraped_names  = [city not in scraped_names for city in city_names]
+not_scraped_names_names = list(compress(city_names, not_scraped_names))
+#%%
+not_scraped_names = list(np.where(not_scraped_names)[0])
+
+#%%
 with Pool(3) as p:
-    
-    city_index = list(range(0, len(city_name_xpaths) + 1, 1))
-    
-    p.map(scrape_both_line_charts, city_index)
+    p.map(scrape_both_line_charts, not_scraped_names)#city_index)
+
+#%%
+with Pool(3) as p:
     p.map(scrape_panels, city_index)                
 
 
 #%%
-with Pool(3) as p:
-    p.map(scrape_both_line_charts, list(range(0, len(city_name_xpaths) + 1, 1)))
-#%%
-with Pool(3) as p:
-    p.map(scrape_panels_for_select_dates, list(range(0, len(city_name_xpaths) + 1, 1)))                
+              
     
 #%%
 select_date_button_index = [29, 22, 15, 8]
+
+
+'''
+intercept AJAX with line data
+
+write update to scrape only those dates that haven't been scraped
+
+'''
 
 
     

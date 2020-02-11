@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Feb 10 11:47:09 2020
+
+@author: hamishgibbs
+"""
+
+from selenium import webdriver
+import time
+import bs4 as BeautifulSoup
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.chrome.options import Options  
+import pandas as pd
+import os
+import datetime
+from multiprocessing import Pool
+from itertools import compress
+import numpy as np
+
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+
+
+#%%
+
+caps = DesiredCapabilities.CHROME
+caps['loggingPrefs'] = {'performance': 'ALL'}
+driver = webdriver.Chrome(desired_capabilities=caps)
+driver.get('https://stackoverflow.com/questions/52633697/selenium-python-how-to-capture-network-traffics-response')
+
+try:
+    browser_log = driver.get_log('browser') 
+    driver.quit()
+except Exception as e:
+    print(e)
+    driver.quit()
+#%%
+def process_browser_log_entry(entry):
+    response = json.loads(entry['message'])['message']
+    return response
+
+#%%
