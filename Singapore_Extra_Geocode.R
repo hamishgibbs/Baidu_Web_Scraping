@@ -53,11 +53,36 @@ leaflet(sing) %>%
 
 #make boundig boxes around extant of each traveller
 
+extra_geo_id = extra_geo %>%
+  rename(case_id = caseNo) %>%
+  select(case_id)
+sing_id = sing %>%
+  select(case_id)
 
+combined_geo = rbind(sing_id, extra_geo_id)
+unique_ids = unique(combined_geo$case_id)
 
+i = 1
+for (id in unique_ids){
+  filtered = combined_geo %>%
+    filter(case_id == id)
+  if (i == 1){
+    bbox_df = tibble(id=id, geometry=st_as_sfc(st_bbox(filtered$geometry)))
+  }else{
+    bbox_df = rbind(bbox_df, tibble(id=id, geometry=st_as_sfc(st_bbox(filtered$geometry))))
+  }
+  
+  i = i + 1
+}
+bbox_df = st_sf(case_id = bbox_df$id, geometry=bbox_df$geometry)
 
-
-clusterOptions = markerClusterOptions()
-c(st_coordinates(extra_geo)[,1])
-pal
-pal(sf$caseNo)
+bbox_df %>%
+  ggplot() +
+  geom_sf()
+leaflet(bbox_df) %>%
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  addPolygons(color = "#444444", weight = 1, smoothFactor = 0.5,
+              opacity = 1.0, fillOpacity = 0.5,
+              fillColor = ~pal(case_id))
+  
+  

@@ -50,7 +50,7 @@ write_rds(sf, '/Users/hamishgibbs/Documents/nCOV-2019/Web_Scraping/Singapore_Dat
 
 sing = read_rds('/Users/hamishgibbs/Dropbox/nCov-2019/data_sources/case_data/Singapore_Scrape/singapore_data.rds')
 
-
+sing$visited
 
 
 
